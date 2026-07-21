@@ -1,77 +1,31 @@
- "use client";
+ import { NextResponse } from "next/server";
 
-import { useEffect, useState } from "react";
+export async function GET() {
+  try {
+    const apiKey = process.env.FOOTBALL_API_KEY;
 
-export default function MatchesPage() {
-  const [matches, setMatches] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadMatches() {
-      const res = await fetch("/api/matches");
-      const data = await res.json();
-
-      console.log(data);
-
-      setMatches(data.matches || data.response || []);
-      setLoading(false);
+    if (!apiKey) {
+      return NextResponse.json({
+        error: "FOOTBALL_API_KEY is missing",
+      }, { status: 500 });
     }
 
-    loadMatches();
-  }, []);
+    const response = await fetch(
+      "https://v3.football.api-sports.io/fixtures?live=all",
+      {
+        headers: {
+          "x-apisports-key": apiKey,
+        },
+      }
+    );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
-        Loading...
-      </div>
+    const data = await response.json();
+
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to fetch matches" },
+      { status: 500 }
     );
   }
-
-  return (
-    <div className="min-h-screen bg-slate-900 text-white p-10">
-      <h1 className="text-4xl font-bold mb-8">
-        ⚽ Live Matches
-      </h1>
-
-      <div className="space-y-5">
-        {matches.map((match: any, index: number) => {
-          const home =
-            match.homeTeam?.name ||
-            match.teams?.home?.name;
-
-          const away =
-            match.awayTeam?.name ||
-            match.teams?.away?.name;
-
-          const league =
-            match.competition?.name ||
-            match.league?.name;
-
-          const status =
-            match.status ||
-            match.fixture?.status?.short;
-
-          return (
-            <div
-              key={match.id || index}
-              className="bg-slate-800 rounded-xl p-5"
-            >
-              <h2 className="text-2xl font-bold">
-                {home} vs {away}
-              </h2>
-
-              <p className="text-gray-400 mt-2">
-                {league}
-              </p>
-
-              <p className="text-green-400 mt-2">
-                {status}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
 }
